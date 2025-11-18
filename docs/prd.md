@@ -4,7 +4,7 @@
 - **Objective:** Deliver a real-time collaborative pixel art application built on the existing uv-initialized Python backend, a WebSocket layer for live updates, and a React-based frontend.
 - **Core Concept:** A 900×900 pixel canvas (810,000 pixels) rendered as an image in the browser. Users paint one pixel at a time using either a color palette picker or a drawing mode that streams brush movements to the backend.
 - **Scope (MVP):** Shared canvas, authenticated sessions (lightweight), WebSocket-driven synchronization, change history for conflict resolution, and deployment-ready scripts for both backend and frontend.
-- **Infrastructure:** Terraform-managed AWS stack with EC2 instances running the Python/WebSocket services and managed PostgreSQL for durable storage.
+- **Infrastructure:** Terraform-managed AWS stack with EC2 instances running the Python/WebSocket services and managed DynamoDB for durable storage.
 
 ## 2. Goals and Non-Goals
 ### Goals
@@ -34,7 +34,7 @@ Primary user journeys:
 ### Backend (Python with uv)
 1. REST endpoints for auth bootstrap, fetching initial canvas bitmap, palette metadata, and audit logs.
 2. WebSocket server broadcasting pixel diffs as events (`pixel:update`, `pixel:bulk_update`, `moderation:lock`).
-3. Persistence layer backed by PostgreSQL (managed RDS or self-hosted on AWS) storing per-pixel color, timestamp, and user id. Local development can fall back to SQLite. Consider Redis cache for hot canvas state.
+3. Persistence layer backed by DynamoDB (managed AWS service) storing per-pixel color, timestamp, and user id. Local development can fall back to DynamoDB Local. Consider Redis cache for hot canvas state.
 4. Rate limiting + flood protection (per IP/user) for pixel updates.
 
 ### Frontend (React)
@@ -54,10 +54,10 @@ Primary user journeys:
 
 ## 5. System Architecture
 1. **Backend service (uv/fastapi or similar):** REST + WebSocket endpoints, orchestrates persistence and moderation rules.
-2. **Data storage:** Primary PostgreSQL instance (AWS RDS or EC2-hosted) for canvas/user data. Optional Redis for caching entire bitmap to serve quickly.
+2. **Data storage:** Primary DynamoDB table for canvas/user data. Optional Redis for caching entire bitmap to serve quickly.
 3. **Static asset hosting:** Build React frontend and serve via CDN or reverse proxy.
 4. **Deployment topology:** Dockerized services on AWS EC2; backend optionally scales horizontally with sticky sessions or shared Redis pub/sub for WebSocket fan-out.
-5. **Infrastructure as Code:** Terraform modules provisioning EC2, networking (VPC, ALB), PostgreSQL, Redis, and CI/CD wiring.
+5. **Infrastructure as Code:** Terraform modules provisioning EC2, networking (VPC, ALB), DynamoDB, Redis, and CI/CD wiring.
 6. **Observability:** Structured logging, Prometheus metrics (update throughput, latency), health checks.
 
 ## 6. Detailed Requirements
@@ -107,7 +107,7 @@ Primary user journeys:
 4. Moderator tooling depth for MVP.
 
 ## 11. Next Steps
-1. Finalize tech stack selections (FastAPI vs Starlette, canvas rendering engine, state store) including AWS EC2 sizing and PostgreSQL tier.
+1. Finalize tech stack selections (FastAPI vs Starlette, canvas rendering engine, state store) including AWS EC2 sizing and DynamoDB capacity planning.
 2. Produce architecture diagrams and interface contracts.
 3. Build Terraform modules for core infrastructure.
 4. Implement backend skeleton (REST + WebSocket) and React app shell.
